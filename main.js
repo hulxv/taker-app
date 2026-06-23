@@ -4,8 +4,15 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { registerAPI1, api1State } = require('./api1');
 
-// Fix blank screen on Linux systems where GPU VSync fails (VMs, some drivers)
+// Fix blank screen on systems where Chromium's GPU process can't launch
+// (VMs, some drivers, headless/restricted sessions). disableHardwareAcceleration()
+// alone is NOT enough: Chromium still spawns a GPU process, and if that fails to
+// start, Electron aborts with "GPU process isn't usable. Goodbye." and the window
+// stays blank. Disabling the GPU process forces software rendering, which this
+// simple HTML/CSS UI runs on fine.
 app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-gpu-compositing');
 
 console.log('MAIN.JS __dirname:', __dirname);
 console.log('PRELOAD PATH:', path.join(__dirname, 'preload.js'));
