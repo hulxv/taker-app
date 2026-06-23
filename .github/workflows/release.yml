@@ -3,7 +3,10 @@ name: Release
 on:
   push:
     tags:
+      # Accept both "v0.2.6" and bare "0.2.6" tags so a missing "v" prefix
+      # no longer silently skips the release build.
       - "v*.*.*"
+      - "[0-9]*.*.*"
 
 permissions:
   contents: write
