@@ -4,15 +4,19 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { registerAPI1, api1State } = require('./api1');
 
-// Fix blank screen on systems where Chromium's GPU process can't launch
-// (VMs, some drivers, headless/restricted sessions). disableHardwareAcceleration()
-// alone is NOT enough: Chromium still spawns a GPU process, and if that fails to
-// start, Electron aborts with "GPU process isn't usable. Goodbye." and the window
-// stays blank. Disabling the GPU process forces software rendering, which this
-// simple HTML/CSS UI runs on fine.
-app.disableHardwareAcceleration();
-app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('disable-gpu-compositing');
+// Linux display fixes — two separate causes of a blank window on Linux:
+//  1) Wayland: Electron defaults to Xwayland and renders the page but never
+//     presents it, leaving the window blank. ozone-platform-hint=auto uses
+//     native Wayland when available (and falls back to X11 otherwise).
+//  2) GPU process: on some VMs/drivers it can't launch and Electron aborts with
+//     "GPU process isn't usable. Goodbye." before showing anything; fall back to
+//     software rendering so the window always appears.
+// macOS/Windows keep hardware acceleration (their GPU path works fine).
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('ozone-platform-hint', 'auto');
+  app.disableHardwareAcceleration();
+  app.commandLine.appendSwitch('disable-gpu');
+}
 
 console.log('MAIN.JS __dirname:', __dirname);
 console.log('PRELOAD PATH:', path.join(__dirname, 'preload.js'));
